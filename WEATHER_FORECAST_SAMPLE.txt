@@ -1,3 +1,5 @@
+-- case study to write data from web service to table in database
+
 CREATE OR REPLACE PROCEDURE UKBS.W_FORECAST
 IS
    MGM_URL   HTTPURITYPE;
