@@ -1,0 +1,32 @@
+CREATE OR REPLACE PROCEDURE UKBS.W_FORECAST
+IS
+   MGM_URL   HTTPURITYPE;
+   MGM_XML   XMLTYPE;
+BEGIN
+   MGM_URL := httpuritype.createuri('http://mgm.gov.tr/FTPDATA/analiz/sonSOA.xml');
+   MGM_XML  := MGM_URL.getxml ();
+
+   FOR READ_N
+      IN (SELECT EXTRACTVALUE (VALUE (X), '/Kemo/Tarih') WDATE,
+                 EXTRACTVALUE (VALUE (P), '/Sehirler/ili') WIL,
+                 EXTRACTVALUE (VALUE (P), '/Sehirler/Mak') WTEMP,
+                 EXTRACTVALUE (VALUE (P), '/Sehirler/Durum') WCONDT
+            FROM TABLE (XMLSEQUENCE (EXTRACT (MGM_XML, '/SOA/Kemo'))) X,
+                 TABLE (XMLSEQUENCE (EXTRACT (VALUE (X), '/SOA/Sehirler'))) P
+           WHERE EXTRACTVALUE (VALUE (P), '/Sehirler/ili') IN ('IZMIR', 'ISTANBUL', 'ANKARA', 'ANTALYA')  
+           and to_date(EXTRACTVALUE (VALUE (X), '/Kemo/Tarih'),'DD/MM/YYYY') =  to_date(SYSDATE,'DD/MM/YYYY') )
+
+   LOOP
+      INSERT INTO MURAT_TEMP_W_FORECAST (city_1,
+                                         temp,
+                                         condition,
+                                         Date1)  
+        SELECT                       
+                                    READ_N.WIL,
+                                    READ_N.WTEMP,
+                                    READ_N.WCONDT,
+                                    to_date(READ_N.WDATE,'DD/MM/YYYY')                                       
+         FROM DUAL;
+         COMMIT;
+    END LOOP;
+END;
